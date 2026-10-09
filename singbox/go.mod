@@ -1,4 +1,4 @@
-module github.com/Charleslkx/v2ray-rules-dat/singbox
+module github.com/Charleslkx/rules-srs/singbox
 
 go 1.26.0
 

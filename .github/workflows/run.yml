@@ -1,18 +1,6 @@
 name: Build V2Ray rules dat files
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 22 * * *"
-  push:
-    branches:
-      - master
-    paths-ignore:
-      - "**/README.md"
-  pull_request:
-    branches:
-      - master
-    paths-ignore:
-      - "**/README.md"
 permissions:
   contents: write
 jobs:

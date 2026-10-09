@@ -2,10 +2,8 @@ name: Convert and audit sing-box rules
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: [Build V2Ray rules dat files]
-    types: [completed]
-    branches: [master]
+  schedule:
+    - cron: '17 0 * * 1' # Monday 08:17 Asia/Singapore
 
 permissions:
   contents: write
@@ -16,7 +14,6 @@ concurrency:
 
 jobs:
   convert:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -26,6 +23,7 @@ jobs:
 
       - uses: actions/checkout@v7
         with:
+          repository: Loyalsoldier/v2ray-rules-dat
           ref: release
           path: source
 
@@ -54,7 +52,10 @@ jobs:
           python3 - <<'PY'
           import json, os, pathlib
           report = json.loads(pathlib.Path('publish/audit.json').read_text())
+          report['source_repository'] = 'Loyalsoldier/v2ray-rules-dat'
+          pathlib.Path('publish/audit.json').write_text(json.dumps(report, indent=2, sort_keys=True) + '\n')
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write(f"Source: {report['source_repository']} at {report['source_commit']}.\n\n")
               summary.write(f"Compiled {report['compiled_sets']} SRS sets.\n\n")
               summary.write(f"CN domain types: {report['counts']['geosite/cn']}\n\nCN IPs: {report['ip_counts']['cn']}\n\n")
               summary.write('Direct/proxy/reject text lists match converted DAT sets after domain case and redundant suffix normalization.\n')

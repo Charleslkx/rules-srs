@@ -1,4 +1,4 @@
-本 fork 新增 [sing-box 转换与完整性检查](singbox/README.md)，原始规则来自 Loyalsoldier；输出见 `sing-box` 分支。
+本 fork 每周一新加坡时间 08:17 拉取 Loyalsoldier 的最新 `release` 规则，完成 [sing-box 转换与完整性检查](singbox/README.md) 后发布到 `sing-box` 分支；支持手动运行。原始 DAT 构建改为手动运行，下文保留上游项目说明。
 
 # 简介 ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/Loyalsoldier/v2ray-rules-dat/total?logo=github) ![GitHub Downloads (all assets, latest release)](https://img.shields.io/github/downloads/Loyalsoldier/v2ray-rules-dat/latest/total?logo=github) [![jsdelivr stats](https://data.jsdelivr.com/v1/package/gh/Loyalsoldier/v2ray-rules-dat/badge?style=rounded)](https://www.jsdelivr.com/package/gh/Loyalsoldier/v2ray-rules-dat)
 
