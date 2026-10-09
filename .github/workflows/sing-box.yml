@@ -1,0 +1,75 @@
+name: Convert and audit sing-box rules
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: [Build V2Ray rules dat files]
+    types: [completed]
+    branches: [master]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sing-box-rules
+  cancel-in-progress: false
+
+jobs:
+  convert:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: master
+
+      - uses: actions/checkout@v7
+        with:
+          ref: release
+          path: source
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: singbox/go.mod
+          cache-dependency-path: singbox/go.sum
+
+      - name: Verify input checksums and test conversion
+        run: |
+          cd source
+          sha256sum -c geosite.dat.sha256sum geoip.dat.sha256sum
+          cd ../singbox
+          go test ./...
+          go run . ../source/geosite.dat ../source/geoip.dat ../publish
+
+      - name: Install pinned official sing-box compiler
+        run: |
+          curl -fL --retry 3 -o sing-box.tar.gz https://github.com/SagerNet/sing-box/releases/download/v1.14.2/sing-box-1.14.2-linux-amd64.tar.gz
+          echo 'a684484d7477d1437282ee411f4d131d0340aaad60a7868841ebd5d87dd8a0c6  sing-box.tar.gz' | sha256sum -c -
+          tar -xzf sing-box.tar.gz
+
+      - name: Audit text list parity and compile all categories
+        run: |
+          python3 singbox/compile.py source publish "$PWD/sing-box-1.14.2-linux-amd64/sing-box" "$(git -C source rev-parse HEAD)"
+          python3 - <<'PY'
+          import json, os, pathlib
+          report = json.loads(pathlib.Path('publish/audit.json').read_text())
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write(f"Compiled {report['compiled_sets']} SRS sets.\n\n")
+              summary.write(f"CN domain types: {report['counts']['geosite/cn']}\n\nCN IPs: {report['ip_counts']['cn']}\n\n")
+              summary.write('Direct/proxy/reject text lists match converted DAT sets after domain case and redundant suffix normalization.\n')
+          PY
+
+      - name: Publish only audited output
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd publish
+          git init -b sing-box
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .
+          git commit -m "Audited rule sets from $(git -C ../source rev-parse HEAD)"
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          gh auth setup-git
+          git push --force origin sing-box
